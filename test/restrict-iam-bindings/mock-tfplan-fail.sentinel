@@ -1,0 +1,14 @@
+terraform_version = "v0.12.28"
+
+planned_values = {
+    "resources": {
+        "google_project_iam_member.test-iam": {
+            "etag"    = (known after apply)
+            "id"      = (known after apply)
+            "member"  = "serviceAccount:sentinel-test@sentinel-283100.iam.gserviceaccount.com"
+            "project" = "sentinel-283100"
+            "role"    = "roles/editor"
+            }
+        }
+    }
+}

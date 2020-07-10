@@ -1,0 +1,47 @@
+import "tfplan"
+# Modules from https://github.com/hashicorp/terraform-guides/blob/master/governance/third-generation/common-functions/tfplan-functions/tfplan-functions.sentinel
+import "tfplan-functions" as plan
+
+# google_organization_iam_member 
+# Non-authoritative iam binding
+# https://www.terraform.io/docs/providers/google/r/google_organization_iam_binding.html
+iamBinding = plan.find_resources("google_organization_iam_binding")
+
+# denied_roles_list contains roles that can be used to impersonate identites at the organization level.
+denied_roles_list = [
+    "roles/owner",
+    "roles/editor",
+    "roles/iam.securityAdmin",
+    "roles/iam.serviceAccountAdmin",
+    "roles/iam.serviceAccountKeyAdmin",
+    "roles/iam.serviceAccountUser",
+    "roles/iam.serviceAccountTokenCreator",
+    "roles/iam.workloadIdentityUser",
+    "roles/dataproc.editor",
+    "roles/dataproc.admin",
+    "roles/dataflow.developer",
+    "roles/resourcemanager.folderAdmin",
+    "roles/resourcemanager.folderIamAdmin",
+    "roles/resourcemanager.projectIamAdmin",
+    "roles/resourcemanager.organizationAdmin",
+    "roles/serverless.serviceAgent",
+    "roles/dataproc.serviceAgent",
+]
+
+violatingIamBinding = plan.filter_attribute_in_list(iamBinding,
+                        "role", denied_roles_list, true)
+                        
+# Check if the default App Engine and Compute service accounts are defined as members. 
+# Default Compute -compute@developer.gserviceaccount.com
+# Default App Spot @appspot.gserviceaccount.com
+#(-compute@developer\\.gserviceaccount\\.com|@appspot\\.gserviceaccount\\.com)
+default_sa_regex = "-compute@developer\\.gserviceaccount\\.com|@appspot\\.gserviceaccount\\.com"
+
+violatingSa = plan.filter_attribute_matches_regex(iamBinding,
+                        "members", default_sa_regex, true)
+
+# Main rule
+main = rule {
+  length(violatingIamBinding["messages"]) is 0 and 
+  length(violatingSa["messages"]) is 0 
+}
